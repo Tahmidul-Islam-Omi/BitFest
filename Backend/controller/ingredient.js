@@ -5,6 +5,7 @@ const catchAsync = require('../utils/catchAsync');
 const ingredientController = {
     addIngredient: catchAsync(async (req, res) => {
         const { ingredient_name, quantity, unit } = req.body;
+        console.log(req.body);
         
         // Validation
         if (!ingredient_name || !quantity || !unit) {
@@ -20,13 +21,13 @@ const ingredientController = {
     }),
 
     updateIngredient: catchAsync(async (req, res) => {
-        const { id, ingredient_name, quantity, unit } = req.body;
+        const { ingredient_id, ingredient_name, quantity, unit } = req.body;
 
-        if (!id) {
+        if (!ingredient_id) {
             throw new AppError('Ingredient ID is required', 400);
         }
 
-        const result = await ingredientModel.update(id, ingredient_name, quantity, unit);
+        const result = await ingredientModel.update(ingredient_id, ingredient_name, quantity, unit);
 
         if (result.rowCount === 0) {
             throw new AppError('Ingredient not found', 404);

@@ -4,6 +4,8 @@ const { pool } = require('./db/connection');
 const app = express();
 
 const ingredientRoutes = require('./route/ingredient');
+const recipeRoutes = require('./route/recipe');
+
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const errorHandler = require('./middleware/errorHandler');
@@ -16,6 +18,7 @@ app.use(bodyParser.json());
 
 // routes
 app.use('/api/v1', ingredientRoutes);
+app.use('/api/v1', recipeRoutes);
 
 // Error handling middleware (should be last)
 app.use(errorHandler);

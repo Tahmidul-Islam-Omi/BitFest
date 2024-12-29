@@ -12,13 +12,13 @@ const ingredientModel = {
     },
 
     // Update an existing ingredient
-    update: async (id, ingredient_name, quantity, unit) => {
+    update: async (ingredient_id, ingredient_name, quantity, unit) => {
         const sql = `
             UPDATE ingredients 
             SET ingredient_name = $2, quantity = $3, unit = $4
-            WHERE id = $1
+            WHERE ingredient_id = $1
             RETURNING *`;
-        const values = [id, ingredient_name, quantity, unit];
+        const values = [ingredient_id, ingredient_name, quantity, unit];
         return await query(sql, values);
     }
 };
