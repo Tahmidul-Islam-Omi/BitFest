@@ -1,21 +1,34 @@
 const express = require('express');
-const { pool } = require('./db/connection'); // Import the database pool
+const config = require('./config/config');
+const { pool } = require('./db/connection');
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+const ingredientRoutes = require('./route/ingredient');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const errorHandler = require('./middleware/errorHandler');
 
 // Middleware for parsing JSON
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(bodyParser.json());
+
+// routes
+app.use('/api/v1', ingredientRoutes);
+
+// Error handling middleware (should be last)
+app.use(errorHandler);
 
 // Ensure database connection and start the server
 pool.connect((err, client, release) => {
     if (err) {
         console.error('Failed to connect to the database:', err.stack);
-        process.exit(1); // Exit the process if the database connection fails
+        process.exit(1);
     } else {
         console.log('Database connected successfully!');
-        // Start the server only after the database connection is established
-        app.listen(PORT, () => {
-            console.log(`Server is running on http://localhost:${PORT}`);
+        app.listen(config.port, () => {
+            console.log(`Server is running on http://localhost:${config.port}`);
         });
     }
 });
