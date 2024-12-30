@@ -1,42 +1,26 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { pool } = require('../db/connection');
 const catchAsync = require('../utils/catchAsync');
-const fs = require('fs').promises;
-const path = require('path');
+const AppError = require('../utils/AppError');
+const chatBotModel = require('../model/chatBot');
 
 class ChatbotService {
     constructor() {
+        if (!process.env.GEMINI_API_KEY) {
+            throw new AppError('GEMINI_API_KEY is not defined in environment variables', 500);
+        }
+        
         this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
     }
 
-    async getAvailableIngredients() {
-        const query = `
-            SELECT i.ingredient_name, i.quantity, i.unit 
-            FROM ingredients i 
-            WHERE i.quantity > 0
-        `;
-        const result = await pool.query(query);
-        return result.rows;
-    }
+    generatePrompt = catchAsync(async (userMessage) => {
+        const ingredients = await chatBotModel.getAvailableIngredients();
+        const recipes = await chatBotModel.getRecipes();
 
-    async getRecipesFromDB() {
-        const query = `
-            SELECT r.name, r.cuisine, r.preparation_time_in_min, r.instructions,
-                   STRING_AGG(i.ingredient_name, ', ') as ingredients
-            FROM recipes r
-            LEFT JOIN recipe_ingredients ri ON r.recipe_id = ri.recipe_id
-            LEFT JOIN ingredients i ON ri.ingredient_id = i.ingredient_id
-            GROUP BY r.recipe_id
-        `;
-        const result = await pool.query(query);
-        return result.rows;
-    }
+        if (!ingredients || !recipes) {
+            throw new AppError('Failed to fetch data from database', 500);
+        }
 
-    generatePrompt = async (userMessage) => {
-        const ingredients = await this.getAvailableIngredients();
-        const recipes = await this.getRecipesFromDB();
-        
         return `
         You are a cooking assistant. Your task is to help suggest recipes based on:
         1. Available ingredients: ${JSON.stringify(ingredients)}
@@ -51,15 +35,36 @@ class ChatbotService {
 
         Format your response in a clear, structured way.
         `;
-    }
+    });
 
     chat = catchAsync(async (userMessage) => {
         const prompt = await this.generatePrompt(userMessage);
+        console.log('Sending prompt to Gemini:', prompt);
+
+        const result = await this.model.generateContent([
+            {
+                text: prompt
+            }
+        ]);
         
-        const result = await this.model.generateContent(prompt);
+        if (!result || !result.response) {
+            throw new AppError('No response received from Gemini API', 502);
+        }
+
         const response = await result.response;
+        const text = response.text();
         
-        return response.text();
+        console.log('Received response from Gemini:', text);
+        
+        if (!text) {
+            throw new AppError('Empty response from Gemini API', 502);
+        }
+
+        return {
+            suggestion: text,
+            ingredients: await chatBotModel.getAvailableIngredients(),
+            timestamp: new Date().toISOString()
+        };
     });
 }
 

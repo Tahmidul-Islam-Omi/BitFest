@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { rateLimit } = require('express-rate-limit');
+const config = require('../config/config');
 const chatbotController = require('../controller/chatbotController');
 
 const chatLimiter = rateLimit({
