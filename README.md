@@ -1,0 +1,1 @@
+Solution of KUET BITFEST 2025 Hackathon Preliminary Round Challenge 2. Challenge 2 Specification - [Hackathon Preliminary Challenges - BitFest 2025.pdf](https://github.com/user-attachments/files/18273052/Hackathon.Preliminary.Challenges.-.BitFest.2025.pdf)
